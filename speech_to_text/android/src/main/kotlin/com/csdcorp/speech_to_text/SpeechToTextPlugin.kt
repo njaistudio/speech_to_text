@@ -684,9 +684,7 @@ public class SpeechToTextPlugin :
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag);
                             debugLog("put languageTag")
                         }
-                        if ( onDevice ) {
-                            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, onDevice );
-                        }
+                        putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, onDevice );
                         putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,10)
 
                         pauseFor?.also {
