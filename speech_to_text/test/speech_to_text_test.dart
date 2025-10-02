@@ -91,11 +91,15 @@ void main() {
       fakeAsync((fa) {
         speech.initialize();
         fa.flushMicrotasks();
-        speech.listen(listenFor: Duration(seconds: 2));
+        speech.listen(
+          listenOptions: SpeechListenOptions(
+            listenFor: const Duration(seconds: 2),
+          ),
+        );
         testPlatform.onStatus!(SpeechToText.listeningStatus);
         fa.flushMicrotasks();
         expect(speech.isListening, isTrue);
-        fa.elapse(Duration(seconds: 2));
+        fa.elapse(const Duration(seconds: 2));
         expect(speech.isListening, isFalse);
       });
     });
@@ -104,13 +108,17 @@ void main() {
       fakeAsync((fa) {
         speech.initialize();
         fa.flushMicrotasks();
-        speech.listen(listenFor: Duration(seconds: 1));
+        speech.listen(
+          listenOptions: SpeechListenOptions(
+            listenFor: const Duration(seconds: 1),
+          ),
+        );
         testPlatform.onStatus!(SpeechToText.listeningStatus);
         testPlatform
             .onTextRecognition!(TestSpeechChannelHandler.firstRecognizedJson);
         fa.flushMicrotasks();
         expect(speech.isListening, isTrue);
-        fa.elapse(Duration(seconds: 1));
+        fa.elapse(const Duration(seconds: 1));
         expect(speech.isListening, isFalse);
       });
     });
@@ -118,11 +126,15 @@ void main() {
       fakeAsync((fa) {
         speech.initialize();
         fa.flushMicrotasks();
-        speech.listen(pauseFor: Duration(seconds: 2));
+        speech.listen(
+          listenOptions: SpeechListenOptions(
+            pauseFor: const Duration(seconds: 2),
+          ),
+        );
         testPlatform.onStatus!(SpeechToText.listeningStatus);
         fa.flushMicrotasks();
         expect(speech.isListening, isTrue);
-        fa.elapse(Duration(seconds: 2));
+        fa.elapse(const Duration(seconds: 2));
         expect(speech.isListening, isFalse);
       });
     });
@@ -132,11 +144,15 @@ void main() {
         speech.initialize();
         fa.flushMicrotasks();
         speech.listen(
-            pauseFor: Duration(seconds: 1), listenFor: Duration(seconds: 5));
+          listenOptions: SpeechListenOptions(
+            pauseFor: const Duration(seconds: 1),
+            listenFor: const Duration(seconds: 5),
+          ),
+        );
         testPlatform.onStatus!(SpeechToText.listeningStatus);
         fa.flushMicrotasks();
         expect(speech.isListening, isTrue);
-        fa.elapse(Duration(seconds: 1));
+        fa.elapse(const Duration(seconds: 1));
         expect(speech.isListening, isFalse);
       });
     });
@@ -146,11 +162,15 @@ void main() {
         speech.initialize();
         fa.flushMicrotasks();
         speech.listen(
-            listenFor: Duration(seconds: 1), pauseFor: Duration(seconds: 5));
+          listenOptions: SpeechListenOptions(
+            listenFor: const Duration(seconds: 1),
+            pauseFor: const Duration(seconds: 5),
+          ),
+        );
         testPlatform.onStatus!(SpeechToText.listeningStatus);
         fa.flushMicrotasks();
         expect(speech.isListening, isTrue);
-        fa.elapse(Duration(seconds: 1));
+        fa.elapse(const Duration(seconds: 1));
         expect(speech.isListening, isFalse);
       });
     });
@@ -160,8 +180,10 @@ void main() {
         fa.flushMicrotasks();
         var resultCount = 0;
         speech.listen(
-          listenFor: Duration(seconds: 5),
-          pauseFor: Duration(seconds: 5),
+          listenOptions: SpeechListenOptions(
+            listenFor: const Duration(seconds: 5),
+            pauseFor: const Duration(seconds: 5),
+          ),
           onResult: (result) => ++resultCount,
         );
         testPlatform.onStatus!(SpeechToText.listeningStatus);
@@ -169,7 +191,7 @@ void main() {
         expect(speech.isListening, isTrue);
         testPlatform
             .onTextRecognition!(TestSpeechChannelHandler.finalRecognizedJson);
-        fa.elapse(Duration(seconds: 7));
+        fa.elapse(const Duration(seconds: 7));
         expect(speech.isListening, isFalse);
         expect(resultCount, 1);
       });
@@ -178,14 +200,18 @@ void main() {
       fakeAsync((fa) {
         speech.initialize();
         fa.flushMicrotasks();
-        speech.listen(pauseFor: Duration(seconds: 2));
+        speech.listen(
+          listenOptions: SpeechListenOptions(
+            pauseFor: const Duration(seconds: 2),
+          ),
+        );
         testPlatform.onStatus!(SpeechToText.listeningStatus);
         fa.flushMicrotasks();
-        fa.elapse(Duration(seconds: 1));
+        fa.elapse(const Duration(seconds: 1));
         testPlatform
             .onTextRecognition!(TestSpeechChannelHandler.firstRecognizedJson);
         fa.flushMicrotasks();
-        fa.elapse(Duration(seconds: 1));
+        fa.elapse(const Duration(seconds: 1));
         expect(speech.isListening, isTrue);
       });
     });
@@ -197,7 +223,7 @@ void main() {
         fa.flushMicrotasks();
         expect(speech.isListening, isFalse);
         try {
-          speech.changePauseFor(Duration(seconds: 5));
+          speech.changePauseFor(const Duration(seconds: 5));
           fail('Should have thrown');
         } on ListenNotStartedException {
           // This is a good result
@@ -210,16 +236,20 @@ void main() {
       fakeAsync((fa) {
         speech.initialize();
         fa.flushMicrotasks();
-        speech.listen(pauseFor: Duration(seconds: 2));
+        speech.listen(
+          listenOptions: SpeechListenOptions(
+            pauseFor: const Duration(seconds: 2),
+          ),
+        );
         testPlatform.onStatus!(SpeechToText.listeningStatus);
         fa.flushMicrotasks();
         expect(speech.isListening, isTrue);
-        fa.elapse(Duration(seconds: 1));
-        speech.changePauseFor(Duration(seconds: 5));
+        fa.elapse(const Duration(seconds: 1));
+        speech.changePauseFor(const Duration(seconds: 5));
         fa.flushMicrotasks();
-        fa.elapse(Duration(seconds: 3));
+        fa.elapse(const Duration(seconds: 3));
         expect(speech.isListening, isTrue);
-        fa.elapse(Duration(seconds: 2));
+        fa.elapse(const Duration(seconds: 2));
         expect(speech.isListening, isFalse);
       });
     });
@@ -228,19 +258,23 @@ void main() {
       fakeAsync((fa) {
         speech.initialize();
         fa.flushMicrotasks();
-        speech.listen(pauseFor: Duration(seconds: 2));
+        speech.listen(
+          listenOptions: SpeechListenOptions(
+            pauseFor: const Duration(seconds: 2),
+          ),
+        );
         testPlatform.onStatus!(SpeechToText.listeningStatus);
         fa.flushMicrotasks();
-        fa.elapse(Duration(seconds: 1));
+        fa.elapse(const Duration(seconds: 1));
         expect(speech.isListening, isTrue);
-        speech.changePauseFor(Duration(seconds: 5));
+        speech.changePauseFor(const Duration(seconds: 5));
         fa.flushMicrotasks();
-        fa.elapse(Duration(seconds: 3));
+        fa.elapse(const Duration(seconds: 3));
         expect(speech.isListening, isTrue);
         testPlatform
             .onTextRecognition!(TestSpeechChannelHandler.firstRecognizedJson);
         fa.flushMicrotasks();
-        fa.elapse(Duration(seconds: 3));
+        fa.elapse(const Duration(seconds: 3));
         expect(speech.isListening, isTrue);
       });
     });
@@ -252,80 +286,101 @@ void main() {
         speech.listen();
         testPlatform.onStatus!(SpeechToText.listeningStatus);
         fa.flushMicrotasks();
-        fa.elapse(Duration(seconds: 5));
+        fa.elapse(const Duration(seconds: 5));
         expect(speech.isListening, isTrue);
-        fa.elapse(Duration(seconds: 1));
-        speech.changePauseFor(Duration(seconds: 5));
-        fa.elapse(Duration(seconds: 3));
+        fa.elapse(const Duration(seconds: 1));
+        speech.changePauseFor(const Duration(seconds: 5));
+        fa.elapse(const Duration(seconds: 3));
         fa.flushMicrotasks();
         expect(speech.isListening, isTrue);
-        fa.elapse(Duration(seconds: 2));
+        fa.elapse(const Duration(seconds: 2));
         fa.flushMicrotasks();
         expect(speech.isListening, isFalse);
       });
     });
-    test('creates finalResult true if none provided', () async {
+    test('creates resultType finalResult if none provided', () async {
       fakeAsync((fa) {
-        speech.initialize(finalTimeout: Duration(milliseconds: 100));
+        speech.initialize(finalTimeout: const Duration(milliseconds: 100));
         fa.flushMicrotasks();
         speech.listen(
-            pauseFor: Duration(seconds: 2), onResult: listener.onSpeechResult);
+            listenOptions: SpeechListenOptions(
+              pauseFor: const Duration(
+                seconds: 2,
+              ),
+            ),
+            onResult: listener.onSpeechResult);
         fa.flushMicrotasks();
         testPlatform
             .onTextRecognition!(TestSpeechChannelHandler.firstRecognizedJson);
         fa.flushMicrotasks();
         // 2200 because it is the 2 second duration of the pauseFor then
         // 100 milliseconds to create the synthetic result
-        fa.elapse(Duration(milliseconds: 2100));
+        fa.elapse(const Duration(milliseconds: 2100));
         expect(listener.results.last.finalResult, isTrue);
       });
     });
     test('respects finalTimeout', () async {
       fakeAsync((fa) {
-        speech.initialize(finalTimeout: Duration(seconds: 0));
+        speech.initialize(finalTimeout: const Duration(seconds: 0));
         fa.flushMicrotasks();
         speech.listen(
-            pauseFor: Duration(seconds: 2), onResult: listener.onSpeechResult);
+            listenOptions: SpeechListenOptions(
+              pauseFor: const Duration(
+                seconds: 2,
+              ),
+            ),
+            onResult: listener.onSpeechResult);
         fa.flushMicrotasks();
         testPlatform
             .onTextRecognition!(TestSpeechChannelHandler.firstRecognizedJson);
         fa.flushMicrotasks();
         // 2200 because it is the 2 second duration of the pauseFor then
         // 200 milliseconds to create the synthetic result
-        fa.elapse(Duration(milliseconds: 2200));
+        fa.elapse(const Duration(milliseconds: 2200));
         expect(listener.results.last.finalResult, isFalse);
       });
     });
-    test('returns only one finalResult true if provided', () async {
+    test('returns only one resultType finalResult if provided', () async {
       fakeAsync((fa) {
-        speech.initialize(finalTimeout: Duration(milliseconds: 100));
+        speech.initialize(finalTimeout: const Duration(milliseconds: 100));
         fa.flushMicrotasks();
         speech.listen(
-            pauseFor: Duration(seconds: 2), onResult: listener.onSpeechResult);
+            listenOptions: SpeechListenOptions(
+              pauseFor: const Duration(
+                seconds: 2,
+              ),
+            ),
+            onResult: listener.onSpeechResult);
         fa.flushMicrotasks();
         testPlatform
             .onTextRecognition!(TestSpeechChannelHandler.finalRecognizedJson);
         fa.flushMicrotasks();
         // 2200 because it is the 2 second duration of the pauseFor then
         // 100 milliseconds to create the synthetic result
-        fa.elapse(Duration(milliseconds: 2100));
-        expect(listener.results.last.finalResult, isTrue);
+        fa.elapse(const Duration(milliseconds: 2100));
+        expect(listener.results.last.resultTypeValue, ResultType.finalResult);
         expect(listener.results, hasLength(1));
       });
     });
-    test('returns only one finalResult true if provided after finalTimeout',
+    test(
+        'returns only one resultType finalResult if provided after finalTimeout',
         () async {
       fakeAsync((fa) {
-        speech.initialize(finalTimeout: Duration(milliseconds: 100));
+        speech.initialize(finalTimeout: const Duration(milliseconds: 100));
         fa.flushMicrotasks();
         speech.listen(
-            pauseFor: Duration(seconds: 2), onResult: listener.onSpeechResult);
+            listenOptions: SpeechListenOptions(
+              pauseFor: const Duration(
+                seconds: 2,
+              ),
+            ),
+            onResult: listener.onSpeechResult);
         testPlatform
             .onTextRecognition!(TestSpeechChannelHandler.firstRecognizedJson);
         fa.flushMicrotasks();
         // 2200 because it is the 2 second duration of the pauseFor then
         // 100 milliseconds to create the synthetic result
-        fa.elapse(Duration(milliseconds: 2100));
+        fa.elapse(const Duration(milliseconds: 2100));
         expect(listener.results.last.finalResult, isTrue);
         testPlatform
             .onTextRecognition!(TestSpeechChannelHandler.finalRecognizedJson);
@@ -335,7 +390,11 @@ void main() {
     });
     test('uses localeId if provided', () async {
       await speech.initialize();
-      await speech.listen(localeId: TestSpeechChannelHandler.localeId1);
+      await speech.listen(
+        listenOptions: SpeechListenOptions(
+          localeId: TestSpeechChannelHandler.localeId1,
+        ),
+      );
       expect(testPlatform.listenInvoked, true);
       expect(testPlatform.listenLocale, TestSpeechChannelHandler.localeId1);
     });
@@ -368,9 +427,9 @@ void main() {
     test('aggregates phrases if provided', () async {
       await speech.initialize();
       await speech.listen(onResult: listener.onSpeechResult);
-      final resultWithAggregaes = SpeechRecognitionResult([
+      final resultWithAggregaes = SpeechRecognitionResult.init([
         TestSpeechChannelHandler.firstPhrases,
-      ], false);
+      ], ResultType.partial);
       testPlatform.onTextRecognition!(jsonEncode(resultWithAggregaes.toJson()));
       expect(listener.speechResults, 1);
       expect(
@@ -384,12 +443,12 @@ void main() {
       await speech.initialize();
       speech.unexpectedPhraseAggregator = (phrases) => phrases.join('. ');
       await speech.listen(onResult: listener.onSpeechResult);
-      final resultWithAggregaes = SpeechRecognitionResult([
+      final resultWithAggregaes = SpeechRecognitionResult.init([
         TestSpeechChannelHandler.firstPhrases,
-      ], false);
+      ], ResultType.partial);
       testPlatform.onTextRecognition!(jsonEncode(resultWithAggregaes.toJson()));
       expect(listener.speechResults, 1);
-      final expectedAggregate =
+      const expectedAggregate =
           '${TestSpeechChannelHandler.firstRecognizedWords}. ${TestSpeechChannelHandler.secondRecognizedWords}';
       expect(
         listener.results.first.recognizedWords,

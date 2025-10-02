@@ -1,5 +1,33 @@
 # Changelog
 
+## 7.4.0-beta.6
+
+### New
+* Android now respects the pauseFor value
+
+### Fix
+* Fixed Swift concurrency error with captured variables in Task closure on iOS - resolves build failure with "Reference to captured var 'localeStr' in concurrently-executing code"
+
+## 7.3.0
+
+### New
+* Partial Windows speech support thanks to @asherchok for the PR. This is the first draft. 
+version of Windows support and is not yet working properly. However it should now be 
+possible to build for Windows without even if speech recognition does not work properly. 
+
+### Fix
+* Issue with numeric conversion for Web thanks to @uniqdev-id for the PR.
+* iOS now performs speech work on a separate thread to avoid UI pauses
+
+## 7.2.0
+
+### New
+* Updated to latest build configuration for Android
+* Updated to use Swift packages instead of pods
+
+### Fix
+* Address incorrect language tag format on Android
+
 ## 7.1.0
 
 ### New

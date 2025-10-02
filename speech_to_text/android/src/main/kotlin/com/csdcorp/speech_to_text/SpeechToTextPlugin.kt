@@ -73,6 +73,20 @@ enum class ListenMode {
     confirmation,
 }
 
+enum class ResultType {
+    partial,
+    intermediate,
+    finalResult,
+}
+
+fun ResultType.intValue(): Int {
+    return when (this) {
+        ResultType.partial -> 0
+        ResultType.intermediate -> 1
+        ResultType.finalResult -> 2
+    }
+}
+
 const val pluginChannelName = "plugin.csdcorp.com/speech_to_text"
 
 @TargetApi(8)
@@ -112,12 +126,15 @@ public class SpeechToTextPlugin :
     private var previousRecognizerLang: String? = null
     private var previousPartialResults: Boolean = true
     private var previousListenMode: ListenMode = ListenMode.deviceDefault
+    private var previousPauseFor: Int? = null
     private var lastFinalTime: Long = 0
     private var speechStartTime: Long = 0
     private var minRms: Float = 1000.0F
     private var maxRms: Float = -100.0F
     private val handler: Handler = Handler(Looper.getMainLooper())
     private val defaultLanguageTag: String = Locale.getDefault().toLanguageTag()
+    private var timer: Timer? = null
+    private lateinit var timerTask: TimerTask
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
 
@@ -198,7 +215,9 @@ public class SpeechToTextPlugin :
                                 "listenMode is required", null)
                         return
                     }
-                    startListening(result, localeId, partialResults, listenModeIndex, onDevice )
+                    val pauseFor =
+                        call.argument<Int?>("pauseFor")
+                    startListening(result, localeId, partialResults, listenModeIndex, onDevice, pauseFor )
                 }
                 "stop" -> stopListening(result)
                 "cancel" -> cancelListening(result)
@@ -262,7 +281,7 @@ public class SpeechToTextPlugin :
     }
 
     private fun startListening(result: Result, languageTag: String, partialResults: Boolean,
-                               listenModeIndex: Int, onDevice: Boolean) {
+                               listenModeIndex: Int, onDevice: Boolean, pauseFor: Int?) {
         if (sdkVersionTooLow() || isNotInitialized() || isListening()) {
             result.success(false)
             return
@@ -270,13 +289,13 @@ public class SpeechToTextPlugin :
         var listenMode = enumValues<ListenMode>()[listenModeIndex]
 
         resultSent = false
-        createRecognizer(onDevice, listenMode)
+        createRecognizer(onDevice, listenMode, pauseFor)
         minRms = 1000.0F
         maxRms = -100.0F
         debugLog("Start listening")
 
         optionallyStartBluetooth()
-        setupRecognizerIntent(languageTag, partialResults, listenMode, onDevice )
+        setupRecognizerIntent(languageTag, partialResults, listenMode, onDevice, pauseFor )
         handler.post {
             run {
                 speechRecognizer?.startListening(recognizerIntent)
@@ -394,6 +413,10 @@ public class SpeechToTextPlugin :
         debugLog("Notify status:" + status)
         channel?.invokeMethod(SpeechToTextCallbackMethods.notifyStatus.name, status)
         if ( !isRecording ) {
+            if (timer != null) {
+                timer?.cancel()
+                timer = null
+            }
             val doneStatus = when( resultSent) {
                 false -> SpeechToTextStatus.doneNoResult.name
                 else -> SpeechToTextStatus.done.name
@@ -424,7 +447,15 @@ public class SpeechToTextPlugin :
         val userSaid = speechBundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
         if (null != userSaid && userSaid.isNotEmpty()) {
             val speechResult = JSONObject()
-            speechResult.put("finalResult", isFinal)
+            val finalResult = speechBundle.getBoolean("final_result", false)
+            val resultType = if (isFinal) {
+                ResultType.finalResult
+            } else if (finalResult) {
+                ResultType.intermediate
+            } else {
+                ResultType.partial
+            }
+            speechResult.put("resultType", resultType.intValue())
             val confidence = speechBundle.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
             val alternates = JSONArray()
             for (resultIndex in 0..userSaid.size - 1) {
@@ -569,7 +600,7 @@ public class SpeechToTextPlugin :
         return list.firstOrNull()?.serviceInfo?.let { ComponentName(it.packageName, it.name) }
     }
 
-    private fun createRecognizer(onDevice: Boolean, listenMode: ListenMode) {
+    private fun createRecognizer(onDevice: Boolean, listenMode: ListenMode, pauseFor: Int?) {
         if ( null != speechRecognizer && onDevice == lastOnDevice ) {
             return
         }
@@ -616,18 +647,20 @@ public class SpeechToTextPlugin :
             }
         }
         debugLog("before setup intent")
-        setupRecognizerIntent(defaultLanguageTag, true, listenMode, false )
+        setupRecognizerIntent(defaultLanguageTag, true, listenMode, false, pauseFor )
         debugLog("after setup intent")
     }
 
-    private fun setupRecognizerIntent(languageTag: String, partialResults: Boolean, listenMode: ListenMode, onDevice: Boolean ) {
+    private fun setupRecognizerIntent(languageTag: String, partialResults: Boolean, listenMode: ListenMode, onDevice: Boolean, pauseFor: Int? ) {
         debugLog("setupRecognizerIntent")
         if (previousRecognizerLang == null ||
                 previousRecognizerLang != languageTag ||
-                partialResults != previousPartialResults || previousListenMode != listenMode ) {
+                partialResults != previousPartialResults || previousListenMode != listenMode ||
+                previousPauseFor != pauseFor ) {
             previousRecognizerLang = languageTag;
             previousPartialResults = partialResults
             previousListenMode = listenMode
+            previousPauseFor = pauseFor
             handler.post {
                 run {
                     recognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -655,6 +688,10 @@ public class SpeechToTextPlugin :
                             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, onDevice );
                         }
                         putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,10)
+
+                        pauseFor?.also {
+                            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, it)
+                        }
                     }
                 }
             }
@@ -689,7 +726,30 @@ public class SpeechToTextPlugin :
 
     override fun onPartialResults(results: Bundle?) = updateResults(results, false)
     override fun onResults(results: Bundle?) = updateResults(results, true)
-    override fun onEndOfSpeech() = notifyListening(isRecording = false)
+    override fun onBeginningOfSpeech() {
+        if (timer != null) {
+            timer?.cancel()
+            timer = null
+        }
+    }
+
+    override fun onEndOfSpeech() {
+        (previousPauseFor ?: 1000).also {
+            timerTask = object : TimerTask() {
+                override fun run() {
+                    timer = null
+                    handler.post {
+                        run {
+                            notifyListening(isRecording = false)
+                        }
+                    }
+                }
+            }
+            timer = Timer().apply {
+                schedule(timerTask, it.toLong())
+            }
+        }
+    }
 
     override fun onError(errorCode: Int) {
         val delta = System.currentTimeMillis() - speechStartTime
@@ -756,7 +816,7 @@ public class SpeechToTextPlugin :
     override fun onReadyForSpeech(p0: Bundle?) {}
     override fun onBufferReceived(p0: ByteArray?) {}
     override fun onEvent(p0: Int, p1: Bundle?) {}
-    override fun onBeginningOfSpeech() {}
+
 }
 
 // See https://stackoverflow.com/questions/10538791/how-to-set-the-language-in-speech-recognition-on-android/10548680#10548680

@@ -129,36 +129,38 @@ class SpeechToTextProvider extends ChangeNotifier {
   /// supported languages for listening.
   ///
   /// Call this only after a successful [initialize] call
-  void listen(
-      {bool partialResults = true,
-      onDevice = false,
-      bool soundLevel = false,
-      Duration? listenFor,
-      Duration? pauseFor,
-      String? localeId,
-      ListenMode listenMode = ListenMode.confirmation}) {
+  void listen({
+    bool partialResults = true,
+    onDevice = false,
+    bool soundLevel = false,
+    Duration? listenFor,
+    Duration? pauseFor,
+    String? localeId,
+    ListenMode listenMode = ListenMode.confirmation,
+  }) {
     _lastLevel = 0;
     _lastResult = null;
     final options = SpeechListenOptions(
-        partialResults: partialResults,
-        onDevice: onDevice,
-        cancelOnError: true,
-        listenMode: listenMode);
+      partialResults: partialResults,
+      onDevice: onDevice,
+      cancelOnError: true,
+      listenFor: listenFor,
+      pauseFor: pauseFor,
+      localeId: localeId,
+      listenMode: listenMode,
+    );
+
     if (soundLevel) {
       _speechToText.listen(
-          listenFor: listenFor,
-          pauseFor: pauseFor,
-          onResult: _onListenResult,
-          onSoundLevelChange: _onSoundLevelChange,
-          localeId: localeId,
-          listenOptions: options);
+        onResult: _onListenResult,
+        onSoundLevelChange: _onSoundLevelChange,
+        listenOptions: options,
+      );
     } else {
       _speechToText.listen(
-          listenFor: listenFor,
-          pauseFor: pauseFor,
-          onResult: _onListenResult,
-          localeId: localeId,
-          listenOptions: options);
+        onResult: _onListenResult,
+        listenOptions: options,
+      );
     }
   }
 
@@ -208,9 +210,14 @@ class SpeechToTextProvider extends ChangeNotifier {
   void _onListenResult(SpeechRecognitionResult result) {
     _lastResult = result;
     _recognitionController.add(SpeechRecognitionEvent(
-        result.finalResult
-            ? SpeechRecognitionEventType.finalRecognitionEvent
-            : SpeechRecognitionEventType.partialRecognitionEvent,
+        switch (result.resultTypeValue) {
+          ResultType.finalResult =>
+            SpeechRecognitionEventType.finalRecognitionEvent,
+          ResultType.intermediate =>
+            SpeechRecognitionEventType.intermediateRecognitionEvent,
+          ResultType.partial =>
+            SpeechRecognitionEventType.partialRecognitionEvent,
+        },
         result,
         null,
         isListening,

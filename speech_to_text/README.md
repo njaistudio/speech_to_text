@@ -1,6 +1,6 @@
 # speech_to_text
 
-[![pub package](https://img.shields.io/badge/pub-v7.1.0-blue)](https://pub.dartlang.org/packages/speech_to_text) [![build status](https://github.com/csdcorp/speech_to_text/workflows/Test/badge.svg)](https://github.com/csdcorp/speech_to_text/actions?query=workflow%3ATest) [![codecov](https://codecov.io/gh/csdcorp/speech_to_text/branch/main/graph/badge.svg?token=4LV3HESMS4)](undefined)
+[![pub package](https://img.shields.io/badge/pub-v7.3.0-blue)](https://pub.dartlang.org/packages/speech_to_text) [![build status](https://github.com/csdcorp/speech_to_text/workflows/Test/badge.svg)](https://github.com/csdcorp/speech_to_text/actions?query=workflow%3ATest) [![codecov](https://codecov.io/gh/csdcorp/speech_to_text/branch/main/graph/badge.svg?token=4LV3HESMS4)](undefined)
 
 A library that exposes device specific speech recognition capability.
 
@@ -13,8 +13,8 @@ conversion or always on listening.
 
 | Support | Android | iOS | MacOS | Web\* | Linux | Windows |
 | :-----: | :-----: | :-: | :---: | :---: | :---: | :-----: |
-|  build  |   ✅    | ✅  |  ✅   |  ✅   |   ✘   |    ✘    |
-| speech  |   ✅    | ✅  |  ✅   |  ✅   |   ✘   |    ✘    |
+|  build  |   ✅    | ✅  |  ✅   |  ✅   |   ✘   |    ✅    |
+| speech  |   ✅    | ✅  |  ✅   |  ✅   |   ✘   |    ✅    |
 
 _build: means you can build and run with the plugin on that platform_
 
@@ -23,6 +23,13 @@ _speech: means most speech recognition features work. Platforms with build but n
 \* _Only some browsers are supported, see [here](https://caniuse.com/?search=Web%20Speech%20API)_
 
 ## Recent Updates
+
+7.3.0
+* Now supports speech recognition on Windows with many thanks to @asherchok 
+for the PR! Note that Windows support is currently in beta, if anyone can try 
+it out please provide feedback, there are known issues and this is not yet 
+ready for production use. 
+* iOS and Mac speech recognition does more work in the background avoiding UI pauses
 
 7.0.0 
 * Now supports speech recognition on MacOS with many thanks to @alexrabin-sentracam for the PR!

@@ -157,13 +157,16 @@ class SpeechToTextPlugin extends SpeechToTextPlatform {
   /// crashes
   ///
   @override
-  Future<bool> listen(
-      {String? localeId,
-      @deprecated partialResults = true,
-      @deprecated onDevice = false,
-      @deprecated int listenMode = 0,
-      @deprecated sampleRate = 0,
-      SpeechListenOptions? options}) async {
+  Future<bool> listen({
+    String? localeId,
+    @Deprecated('Use SpeechListenOptions.partialResults instead')
+    partialResults = true,
+    @Deprecated('Use SpeechListenOptions.onDevice instead') onDevice = false,
+    @Deprecated('Use SpeechListenOptions.listenMode instead')
+    int listenMode = 0,
+    @Deprecated('Use SpeechListenOptions.sampleRate instead') sampleRate = 0,
+    SpeechListenOptions? options,
+  }) async {
     if (null == _webSpeech) return false;
     _webSpeech!.onresult = _onResult.toJS;
     _webSpeech!.interimResults = options?.partialResults ?? partialResults;
@@ -216,7 +219,7 @@ class SpeechToTextPlugin extends SpeechToTextPlatform {
   }
 
   void _onResult(web.SpeechRecognitionEvent event) {
-    var isFinal = false;
+    var resultType = ResultType.partial;
     var recogResults = <SpeechRecognitionWords>[];
     var results = event.results;
 
@@ -230,20 +233,18 @@ class SpeechToTextPlugin extends SpeechToTextPlatform {
           altIndex < (recognitionResult.length);
           ++altIndex) {
         longestAlt = max(longestAlt, altIndex);
-        final web.SpeechRecognitionAlternative? alt =
+        final web.SpeechRecognitionAlternative alt =
             recognitionResult.item(altIndex);
-
-        if (null == alt) continue;
 
         final transcript = alt.transcript;
         final confidence = alt.confidence;
 
-        balanced.add(resultIndex, transcript, confidence);
+        balanced.add(resultIndex, transcript, confidence.toDouble());
       }
       ++resultIndex;
     }
     recogResults = balanced.getAlternates(_aggregateResults);
-    var result = SpeechRecognitionResult(recogResults, isFinal);
+    var result = SpeechRecognitionResult.init(recogResults, resultType);
     onTextRecognition?.call(jsonEncode(result.toJson()));
     _resultSent = true;
   }

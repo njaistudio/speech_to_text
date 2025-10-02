@@ -1,5 +1,5 @@
 import Speech
-import Try
+import CwlCatchException
 import os.log
 
 #if os(OSX)
@@ -51,6 +51,11 @@ public enum ListenMode: Int {
   case confirmation = 3
 }
 
+public enum ResultType: Int {
+  case partial = 0
+  case finalResult = 2
+}
+
 struct SpeechRecognitionWords: Codable {
   let recognizedWords: String
   let recognizedPhrases: [String]?
@@ -59,7 +64,7 @@ struct SpeechRecognitionWords: Codable {
 
 struct SpeechRecognitionResult: Codable {
   let alternates: [SpeechRecognitionWords]
-  let finalResult: Bool
+  let resultType: Int
 }
 
 struct SpeechRecognitionError: Codable {
@@ -130,7 +135,13 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
     case SwiftSpeechToTextMethods.has_permission.rawValue:
       hasPermission(result)
     case SwiftSpeechToTextMethods.initialize.rawValue:
-      initialize(result)
+        if #available(iOS 13.0, *) {
+            Task {
+                initialize(result)
+            }
+        } else {
+            initialize(result)
+        }
     case SwiftSpeechToTextMethods.listen.rawValue:
       guard let argsArr = call.arguments as? [String: AnyObject],
         let partialResults = argsArr["partialResults"] as? Bool,
@@ -164,17 +175,50 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
         }
         return
       }
-
-      listenForSpeech(
-        result, localeStr: localeStr, partialResults: partialResults, onDevice: onDevice,
-        listenMode: listenMode, sampleRate: sampleRate, autoPunctuation: autoPunctuation,
-        enableHaptics: enableHaptics)
+        if #available(iOS 13.0, *) {
+            let capturedLocaleStr = localeStr
+            let capturedPartialResults = partialResults
+            let capturedOnDevice = onDevice
+            let capturedListenMode = listenMode
+            let capturedSampleRate = sampleRate
+            let capturedAutoPunctuation = autoPunctuation
+            let capturedEnableHaptics = enableHaptics
+            Task {
+                listenForSpeech(
+                    result, localeStr: capturedLocaleStr, partialResults: capturedPartialResults, onDevice: capturedOnDevice,
+                    listenMode: capturedListenMode, sampleRate: capturedSampleRate, autoPunctuation: capturedAutoPunctuation,
+                    enableHaptics: capturedEnableHaptics)
+            }
+        } else {
+            listenForSpeech(
+                result, localeStr: localeStr, partialResults: partialResults, onDevice: onDevice,
+                listenMode: listenMode, sampleRate: sampleRate, autoPunctuation: autoPunctuation,
+                enableHaptics: enableHaptics)
+        }
     case SwiftSpeechToTextMethods.stop.rawValue:
-      stopSpeech(result)
+        if #available(iOS 13.0, *) {
+            Task {
+                stopSpeech(result)
+            }
+        } else {
+            stopSpeech(result)
+        }
     case SwiftSpeechToTextMethods.cancel.rawValue:
-      cancelSpeech(result)
+        if #available(iOS 13.0, *) {
+            Task {
+                cancelSpeech(result)
+            }
+        } else {
+            cancelSpeech(result)
+        }
     case SwiftSpeechToTextMethods.locales.rawValue:
-      locales(result)
+        if #available(iOS 13.0, *) {
+            Task {
+                locales(result)
+            }
+        } else {
+            locales(result)
+        }
     default:
       os_log("Unrecognized method: %{PUBLIC}@", log: pluginLog, type: .error, call.method)
       DispatchQueue.main.async {
@@ -261,6 +305,7 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
     guard !soundKey.isEmpty else {
       return player
     }
+    
     if let soundPath = Bundle.main.path(forResource: soundKey, ofType: nil) {
       let soundUrl = URL(fileURLWithPath: soundPath)
       do {
@@ -388,7 +433,7 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
     self.currentRequest?.endAudio()
     stopAllPlayers()
     do {
-      try trap {
+      try catchExceptionAsError {
         self.audioEngine?.stop()
       }
     } catch {
@@ -397,7 +442,7 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
         error.localizedDescription)
     }
     do {
-      try trap {
+      try catchExceptionAsError {
         self.inputNode?.removeTap(onBus: self.busForNodeTap)
       }
     } catch {
@@ -544,7 +589,7 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
         fmt = self.inputNode?.inputFormat(forBus: bus)
 
       #endif
-      try trap {
+      try catchExceptionAsError {
         self.inputNode?.installTap(
           onBus: self.busForNodeTap, bufferSize: self.speechBufferSize, format: fmt
         ) { (buffer: AVAudioPCMBuffer, when: AVAudioTime) in
@@ -819,6 +864,7 @@ extension SpeechToTextPlugin: AVAudioPlayerDelegate {
   }
 }
 
+@available(iOS 10.0, macOS 10.15, *)
 private class SpeechResultAggregator {
     private var speechTranscriptions: [SFTranscription]
     private var previousTranscriptions: [[SFTranscription]]
@@ -916,7 +962,7 @@ private class SpeechResultAggregator {
                 recognizedWords: transcription.formattedString, recognizedPhrases: nil, confidence: confidenceIn(transcription))
             speechWords.append(words)
         }
-        return SpeechRecognitionResult(alternates: speechWords, finalResult: isFinal )
+        return SpeechRecognitionResult(alternates: speechWords, resultType: isFinal ? ResultType.finalResult.rawValue : ResultType.partial.rawValue )
 
     }
     
